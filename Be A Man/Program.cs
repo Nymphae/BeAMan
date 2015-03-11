@@ -42,7 +42,7 @@ namespace Be_A_Man
             Q = new Spell(SpellSlot.Q, 175);
             W = new Spell(SpellSlot.W, 40);
             E = new Spell(SpellSlot.E, 600);
-            R = new Spell(SpellSlot.R, 187);
+            R = new Spell(SpellSlot.R, 350);
 
 
 
@@ -56,7 +56,9 @@ namespace Be_A_Man
                 comboMenu.AddItem(new MenuItem("kek.xin.combo.useq", "Use Q").SetValue(true));
                 comboMenu.AddItem(new MenuItem("kek.xin.combo.usew", "Use W").SetValue(true));
                 comboMenu.AddItem(new MenuItem("kek.xin.combo.usee", "Use E").SetValue(true));
-               
+                comboMenu.AddItem(new MenuItem("kek.xin.combo.user", "Auto use R (change settings below").SetValue(true));
+                comboMenu.AddItem(new MenuItem("kek.xin.combo.ecounter", "Dont E if X Enemies are present").SetValue(new Slider(1, 1, 5)));
+                comboMenu.AddItem(new MenuItem("kek.xin.combo.rcount", "Ult if X Enemies are preset").SetValue(new Slider(1, 1, 5)));
             }
 
             var farmMenu = new Menu("Jungle/Lane Clear", "kek.xin.farm");
@@ -74,8 +76,8 @@ namespace Be_A_Man
 
             var drawMenu = new Menu("Draw Settings", "kek.xin.draw");
             {
-                drawMenu.AddItem(new MenuItem("kek.xin.drawQrange", "Q Draw").SetValue(true));
-                drawMenu.AddItem(new MenuItem("kek.xin.drawWrange", "W Draw").SetValue(true));
+                drawMenu.AddItem(new MenuItem("kek.xin.drawRrange", "R Draw").SetValue(true));
+                drawMenu.AddItem(new MenuItem("kek.xin.drawErange", "E Draw").SetValue(true));
             }
 
             _Menu.AddSubMenu(ksMenu);
@@ -144,28 +146,36 @@ namespace Be_A_Man
                     E.Cast(minions);
                 }
 
-                 if
-                    (_Menu.Item("kek.xin.farm.farmw").GetValue<bool>() && W.IsReady() && minions.IsValidTarget(Q.Range))
-                    {
-                        W.Cast();
-                    }
+                if
+                   (_Menu.Item("kek.xin.farm.farmw").GetValue<bool>() && W.IsReady() && minions.IsValidTarget(Q.Range))
+                {
+                    W.Cast();
+                }
 
-                    if (_Menu.Item("kek.xin.farm.farmq").GetValue<bool>() && !E.IsReady() && !W.IsReady() &&
-                        minions.IsValidTarget(Q.Range))
-                    {
-                        Q.Cast();
-                    }
-                
+                if (_Menu.Item("kek.xin.farm.farmq").GetValue<bool>() && !E.IsReady() && !W.IsReady() &&
+                    minions.IsValidTarget(Q.Range))
+                {
+                    Q.Cast();
+                }
+
             }
         }
 
         private static void Combo()
         {
         var target = TargetSelector.GetTarget(600, TargetSelector.DamageType.Physical);
+            var eTarget = TargetSelector.GetTarget(E.Range, TargetSelector.DamageType.Physical);
+            var rTarget = TargetSelector.GetTarget(R.Range, TargetSelector.DamageType.Physical);
+            var Esetting = _Menu.Item("kek.xin.combo.ecounter").GetValue<Slider>().Value;
+            var Rset = _Menu.Item("kek.xin.combo.rcount").GetValue<Slider>().Value;
 
-            if (target != null && _Menu.Item("kek.xin.combo.usee").GetValue<bool>() && E.IsReady())
+            if (target !=null && _Menu.Item("kek.xin.combo.usee").GetValue<bool>() && E.IsReady())
             {
-                E.Cast(target);
+               if (eTarget.CountEnemiesInRange(1000f) < Esetting)
+                {
+                    E.Cast(target);
+                    
+                }
             }
 
             if (target!= null && _Menu.Item("kek.xin.combo.usew").GetValue<bool>() && W.IsReady())
@@ -178,6 +188,7 @@ namespace Be_A_Man
                 Q.Cast();
             }
 
+            
           if (_Menu.Item("kek.xin.ks.R").GetValue<bool>())
             {
                 KillstealR();
@@ -187,20 +198,28 @@ namespace Be_A_Man
             {
                 KillstealEQ();
             }
-        }
-        
+            if ( target !=null && _Menu.Item("kek.xin.combo.user").GetValue<bool>() &&  R.IsReady())
+            {
+                if (rTarget.CountEnemiesInRange(1000f) >= Rset)
 
-     private static void KillstealR()
+                {
+                    R.Cast();
+                }
+            }
+        }
+
+
+        private static void KillstealR()
         {
-               
-             foreach (var hero in ObjectManager.Get<Obj_AI_Hero>().Where(hero => hero.IsValidTarget(R.Range)))
+
+            foreach (var hero in ObjectManager.Get<Obj_AI_Hero>().Where(hero => hero.IsValidTarget(R.Range)))
             {
                 if (R.IsReady() && hero.Distance(ObjectManager.Player) <= R.Range &&
                     Player.GetSpellDamage(hero, SpellSlot.R) >= hero.Health)
                     R.Cast();
             }
 
-        
+
         }
 
         private static void KillstealEQ()
